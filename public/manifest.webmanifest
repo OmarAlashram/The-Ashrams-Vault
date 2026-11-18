@@ -1,0 +1,11 @@
+{
+  "name": "The Ashrams Vault",
+  "short_name": "Ashrams Vault",
+  "description": "Family documents, private and secure.",
+  "start_url": "/vault",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1F4E78",
+  "icons": []
+}
