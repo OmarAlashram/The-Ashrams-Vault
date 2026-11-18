@@ -10,6 +10,10 @@ export const metadata: Metadata = {
     title: 'Ashrams Vault',
     statusBarStyle: 'default',
   },
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/apple-touch-icon.png',
+  },
 };
 
 export const viewport: Viewport = {
