@@ -101,6 +101,53 @@ export default function VaultClient() {
     }
   }
 
+  async function fetchFile(doc: Doc): Promise<File | null> {
+    const { data, error } = await supabase.storage.from('vault').createSignedUrl(doc.file_path, 300);
+    if (error || !data) {
+      setError(error?.message ?? 'Could not get file');
+      return null;
+    }
+    const res = await fetch(data.signedUrl);
+    const blob = await res.blob();
+    const name = doc.title.replace(/[\\/:*?"<>|]+/g, '_');
+    const ext = doc.file_path.includes('.') ? doc.file_path.split('.').pop() : '';
+    const fileName = ext && !name.toLowerCase().endsWith(`.${ext.toLowerCase()}`) ? `${name}.${ext}` : name;
+    return new File([blob], fileName, { type: blob.type || undefined });
+  }
+
+  async function download(doc: Doc) {
+    const file = await fetchFile(doc);
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  async function share(doc: Doc) {
+    const file = await fetchFile(doc);
+    if (!file) return;
+    const canShareFiles =
+      typeof navigator !== 'undefined' &&
+      typeof navigator.share === 'function' &&
+      typeof navigator.canShare === 'function' &&
+      navigator.canShare({ files: [file] });
+    if (!canShareFiles) {
+      setError('Sharing is not supported on this device. Use Download instead.');
+      return;
+    }
+    try {
+      await navigator.share({ files: [file], title: doc.title });
+    } catch (e) {
+      // User cancelled the share sheet: nothing to do.
+      if (e instanceof Error && e.name !== 'AbortError') setError(e.message);
+    }
+  }
+
   return (
     <>
       <input
@@ -120,9 +167,11 @@ export default function VaultClient() {
               <div><strong>{d.title}</strong></div>
               <small>{d.owner_member} · {d.category}</small>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               {expiryBadge(d.expires_on)}
               <button onClick={() => open(d)}>Open</button>
+              <button onClick={() => download(d)} style={{ background: '#4a6b8a' }}>Download</button>
+              <button onClick={() => share(d)} style={{ background: '#2e7d5b' }}>Share</button>
             </div>
           </div>
         ))}
