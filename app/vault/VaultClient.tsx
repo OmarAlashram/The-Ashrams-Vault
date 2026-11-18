@@ -88,9 +88,17 @@ export default function VaultClient() {
   }
 
   async function open(doc: Doc) {
+    // Open a blank tab immediately (inside the tap), so Safari does not block it.
+    const win = window.open('', '_blank');
     const { data, error } = await supabase.storage.from('vault').createSignedUrl(doc.file_path, 300);
-    if (error || !data) setError(error?.message ?? 'Could not open file');
-    else window.open(data.signedUrl, '_blank');
+    if (error || !data) {
+      win?.close();
+      setError(error?.message ?? 'Could not open file');
+    } else if (win) {
+      win.location.href = data.signedUrl;
+    } else {
+      window.location.href = data.signedUrl;
+    }
   }
 
   return (
